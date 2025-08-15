@@ -22,6 +22,7 @@ import {
   DEFAULT_ENCODING,
   getSpecificMimeType,
 } from '../utils/fileUtils.js';
+import { DEFAULT_FILE_EXCLUDES } from '../utils/ignorePatterns.js';
 import { PartListUnion } from '@google/genai';
 import { Config, DEFAULT_FILE_FILTERING_OPTIONS } from '../config/config.js';
 import {
@@ -98,49 +99,13 @@ type FileProcessingResult =
     };
 
 /**
- * Default exclusion patterns for commonly ignored directories and binary file types.
- * These are compatible with glob ignore patterns.
+ * Creates the default exclusion patterns including dynamic patterns.
+ * This combines the shared DEFAULT_FILE_EXCLUDES with dynamic patterns like GEMINI.md.
  * TODO(adh): Consider making this configurable or extendable through a command line argument.
- * TODO(adh): Look into sharing this list with the glob tool.
  */
-const DEFAULT_EXCLUDES: string[] = [
-  '**/node_modules/**',
-  '**/.git/**',
-  '**/.vscode/**',
-  '**/.idea/**',
-  '**/dist/**',
-  '**/build/**',
-  '**/coverage/**',
-  '**/__pycache__/**',
-  '**/*.pyc',
-  '**/*.pyo',
-  '**/*.bin',
-  '**/*.exe',
-  '**/*.dll',
-  '**/*.so',
-  '**/*.dylib',
-  '**/*.class',
-  '**/*.jar',
-  '**/*.war',
-  '**/*.zip',
-  '**/*.tar',
-  '**/*.gz',
-  '**/*.bz2',
-  '**/*.rar',
-  '**/*.7z',
-  '**/*.doc',
-  '**/*.docx',
-  '**/*.xls',
-  '**/*.xlsx',
-  '**/*.ppt',
-  '**/*.pptx',
-  '**/*.odt',
-  '**/*.ods',
-  '**/*.odp',
-  '**/*.DS_Store',
-  '**/.env',
-  `**/${getCurrentGeminiMdFilename()}`,
-];
+function getDefaultExcludes(): string[] {
+  return [...DEFAULT_FILE_EXCLUDES, `**/${getCurrentGeminiMdFilename()}`];
+}
 
 const DEFAULT_OUTPUT_SEPARATOR_FORMAT = '--- {filePath} ---';
 
@@ -171,7 +136,7 @@ ${this.config.getTargetDir()}
       .getGeminiIgnorePatterns();
     const finalExclusionPatternsForDescription: string[] =
       paramUseDefaultExcludes
-        ? [...DEFAULT_EXCLUDES, ...paramExcludes, ...geminiIgnorePatterns]
+        ? [...getDefaultExcludes(), ...paramExcludes, ...geminiIgnorePatterns]
         : [...paramExcludes, ...geminiIgnorePatterns];
 
     let excludeDesc = `Excluding: ${
@@ -229,7 +194,7 @@ ${finalExclusionPatternsForDescription
     const contentParts: PartListUnion = [];
 
     const effectiveExcludes = useDefaultExcludes
-      ? [...DEFAULT_EXCLUDES, ...exclude]
+      ? [...getDefaultExcludes(), ...exclude]
       : [...exclude];
 
     const searchPatterns = [...inputPatterns, ...include];
